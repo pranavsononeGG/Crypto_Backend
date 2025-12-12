@@ -1,34 +1,66 @@
 import { Order } from '../interfaces';
+import pool from '../config/db';
 
-// Mimics a Postgres Repository
+// Real Postgres Repository
 export class OrderRepository {
-    private orders: Map<string, Order> = new Map();
 
     async create(order: Order): Promise<Order> {
-        // Simulate DB Latency
-        await new Promise(resolve => setTimeout(resolve, 50));
-        this.orders.set(order.id, order);
-        console.log(`[PG] Order stored: ${order.id}`);
-        return order;
-    }
+        const query = `
+            INSERT INTO orders (id, token_in, token_out, amount, target_price, side, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *
+        `;
+        const values = [
+            order.id,
+            order.tokenIn,
+            order.tokenOut,
+            order.amount,
+            order.targetPrice,
+            order.side,
+            order.status,
+            order.createdAt,
+            order.updatedAt
+        ];
 
-    async findById(id: string): Promise<Order | null> {
-        await new Promise(resolve => setTimeout(resolve, 20));
-        return this.orders.get(id) || null;
-    }
-
-    async updateStatus(id: string, status: 'pending' | 'executed' | 'cancelled'): Promise<void> {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const order = this.orders.get(id);
-        if (order) {
-            order.status = status;
-            order.updatedAt = new Date();
-            this.orders.set(id, order);
-            console.log(`[PG] Order updated: ${id} -> ${status}`);
+        try {
+            const res = await pool.query(query, values);
+            console.log(`[PG] Order stored: ${order.id}`);
+            return this.mapRowToOrder(res.rows[0]);
+        } catch (err) {
+            console.error('[PG] Error creating order:', err);
+            throw err;
         }
     }
 
+    async findById(id: string): Promise<Order | null> {
+        const query = 'SELECT * FROM orders WHERE id = $1';
+        const res = await pool.query(query, [id]);
+        if (res.rows.length === 0) return null;
+        return this.mapRowToOrder(res.rows[0]);
+    }
+
+    async updateStatus(id: string, status: 'pending' | 'executed' | 'cancelled'): Promise<void> {
+        const query = 'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2';
+        await pool.query(query, [status, id]);
+        console.log(`[PG] Order updated: ${id} -> ${status}`);
+    }
+
     async findAll(): Promise<Order[]> {
-        return Array.from(this.orders.values());
+        const res = await pool.query('SELECT * FROM orders');
+        return res.rows.map(this.mapRowToOrder);
+    }
+
+    private mapRowToOrder(row: any): Order {
+        return {
+            id: row.id,
+            tokenIn: row.token_in,
+            tokenOut: row.token_out,
+            amount: Number(row.amount),
+            targetPrice: Number(row.target_price),
+            side: row.side,
+            status: row.status,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        };
     }
 }
