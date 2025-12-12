@@ -2,8 +2,12 @@ import app from './app';
 import { runMigrations } from './repositories/migrations';
 import { WebSocketServer } from 'ws';
 import { redisSub } from './config/redis';
+import { OrderWorker } from './services/queue/orderWorker';
 
 const PORT = 3000;
+
+// Initialize Worker (Global)
+const worker = new OrderWorker();
 
 const start = async () => {
     await runMigrations();
