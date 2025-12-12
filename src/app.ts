@@ -1,10 +1,7 @@
-import express from 'express';
-import bodyParser from 'body-parser';
+import fastify from 'fastify';
 import { executeOrder } from './controllers/orderController';
 
-const app = express();
-
-app.use(bodyParser.json());
+const app = fastify({ logger: true });
 
 app.post('/api/orders/execute', executeOrder);
 

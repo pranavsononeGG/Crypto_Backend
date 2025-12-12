@@ -6,14 +6,23 @@ dotenv.config();
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
 console.log(`[Redis] Connecting to ${redisUrl}...`);
-const redis = new Redis(redisUrl);
+
+// Publisher / General Client
+export const redis = new Redis(redisUrl);
+// Subscriber Client (Needs separate connection)
+export const redisSub = new Redis(redisUrl);
 
 redis.on('connect', () => {
-    console.log('[Redis] Connected successfully');
+    console.log('[Redis] Publisher Connected');
+});
+
+redisSub.on('connect', () => {
+    console.log('[Redis] Subscriber Connected');
 });
 
 redis.on('error', (err) => {
-    console.error('[Redis] Connection error:', err);
+    console.error('[Redis] Publisher Error:', err);
 });
 
-export default redis;
+export default redis; // Default export for backward compatibility if needed, but prefer named import
+
