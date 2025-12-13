@@ -24,26 +24,6 @@ describe('WebSocket Integration', () => {
         try {
             await app.ready();
             await app.listen({ port: TEST_PORT, host: '0.0.0.0' });
-
-            wss = new WebSocketServer({ server: app.server, path: '/ws/orders' });
-            wss.on('connection', (ws) => {
-                ws.send(JSON.stringify({ type: 'info', message: 'Welcome' }));
-
-                ws.on('message', async (message) => {
-                    const msg = JSON.parse(message.toString());
-                    if (msg.type === 'subscribe' && msg.orderId) {
-                        // Mocking the subscription logic simply
-                        const redisSub = require('../config/redis').redisSub;
-                        await redisSub.subscribe(`order_updates:${msg.orderId}`);
-                        ws.send(JSON.stringify({ type: 'info', message: `Subscribed to ${msg.orderId}` }));
-
-                        // Forwarding logic
-                        redisSub.on('message', (channel: string, m: string) => {
-                            if (channel === `order_updates:${msg.orderId}`) ws.send(m);
-                        });
-                    }
-                });
-            });
         } catch (e) {
             console.error('Setup failed', e);
         }
@@ -51,7 +31,6 @@ describe('WebSocket Integration', () => {
 
     afterAll(async () => {
         await app.close();
-        wss.close();
     });
 
     it('should connect and receive welcome message', (done) => {

@@ -3,10 +3,11 @@ import { redisSub } from '../config/redis';
 
 export default async function wsRoutes(fastify: FastifyInstance) {
     fastify.get('/ws/orders', { websocket: true }, (connection: any, req) => {
+        const socket = connection.socket || connection;
         console.log('[WS] Client connected');
-        connection.socket.send(JSON.stringify({ type: 'info', message: 'Welcome' }));
+        socket.send(JSON.stringify({ type: 'info', message: 'Welcome' }));
 
-        connection.socket.on('message', async (message) => {
+        socket.on('message', async (message: any) => {
             try {
                 // Expect: { "type": "subscribe", "orderId": "..." }
                 const msg = JSON.parse(message.toString());
@@ -17,7 +18,7 @@ export default async function wsRoutes(fastify: FastifyInstance) {
                     await redisSub.subscribe(`order_updates:${msg.orderId}`);
 
                     // Send acknowledgment
-                    connection.socket.send(JSON.stringify({
+                    socket.send(JSON.stringify({
                         type: 'info',
                         message: `Subscribed to ${msg.orderId}`
                     }));
@@ -28,7 +29,7 @@ export default async function wsRoutes(fastify: FastifyInstance) {
         });
 
         // Handle Redis Messages
-        redisSub.on('message', (channel, message) => {
+        const redisMessageHandler = (channel: string, message: string) => {
             // Check if this connection is interested? 
             // In a real app we'd map socket <-> channels. 
             // HERE: Simplified. We broadcast ALL received redis messages to this socket if the channel matches what they *might* want (or just all).
@@ -54,14 +55,17 @@ export default async function wsRoutes(fastify: FastifyInstance) {
             // We'll just listen and forward. 
             if (channel.startsWith('order_updates:')) {
                 // Ensure socket is open
-                if (connection.socket.readyState === 1) {
-                    connection.socket.send(message);
+                if (socket.readyState === 1) {
+                    socket.send(message);
                 }
             }
-        });
+        };
 
-        connection.socket.on('close', () => {
+        redisSub.on('message', redisMessageHandler);
+
+        socket.on('close', () => {
             console.log('[WS] Client disconnected');
+            redisSub.off('message', redisMessageHandler);
         });
     });
 }
