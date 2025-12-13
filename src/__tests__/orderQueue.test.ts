@@ -27,7 +27,7 @@ jest.mock('../repositories/activeOrderCache');
 jest.mock('../config/queue', () => ({
     QUEUE_NAME: 'test-integration-queue',
     connection: { host: 'localhost', port: 6379 }, // Assuming local Redis
-    QUEUE_OPTS: { defaultJobOptions: { removeOnComplete: true } },
+    QUEUE_OPTS: { defaultJobOptions: { removeOnComplete: false } },
     WORKER_OPTS: { concurrency: 1, limiter: { max: 10, duration: 1000 } }
 }));
 
