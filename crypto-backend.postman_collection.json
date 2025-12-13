@@ -1,0 +1,60 @@
+{
+    "info": {
+        "_postman_id": "crypto-backend-api",
+        "name": "Crypto Execution Engine",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Execute Order",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"tokenIn\": \"SOL\",\n    \"tokenOut\": \"USDC\",\n    \"amount\": 1,\n    \"targetPrice\": 150,\n    \"side\": \"sell\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:3000/api/orders/execute",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000",
+                    "path": [
+                        "api",
+                        "orders",
+                        "execute"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Order Stream (WebSocket)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "ws://localhost:3000/ws/orders",
+                    "protocol": "ws",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000",
+                    "path": [
+                        "ws",
+                        "orders"
+                    ]
+                },
+                "description": "Connect to WS. Send: {\"type\": \"subscribe\", \"orderId\": \"<ORDER_ID>\"}"
+            },
+            "response": []
+        }
+    ]
+}
